@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  hashedPassword  String
+  role            String    @default("user")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  reports         Report[]
+}
+
+model Vehicle {
+  id              String    @id @default(cuid())
+  plateNumber     String    @unique
+  model           String
+  status          String    @default("available")
+  fuelLevel       Int       @default(100)
+  lastMaintenance DateTime  @default(now())
+  latitude        Float?
+  longitude       Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  driver          Driver?   @relation("CurrentVehicle")
+  rides           Ride[]
+  maintenanceLogs MaintenanceLog[]
+  PassengerCapacity        Int       @default(5) 
+  luguageCapacity        Int       @default(5)      
+}
+
+model Driver {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  phone           String
+  licenseNumber   String    @unique
+  rating          Float     @default(5.0)
+  status          String    @default("available")
+  currentVehicle  Vehicle?  @relation("CurrentVehicle", fields: [vehicleId], references: [id])
+  vehicleId       String?   @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  rides           Ride[]
+  documents       Document[]
+}
+
+model Ride {
+  id                String    @id @default(cuid())
+  pickupLatitude    Float
+  pickupLongitude   Float
+  pickupAddress     String
+  dropoffLatitude   Float
+  dropoffLongitude  Float
+  dropoffAddress    String
+  status            String    @default("pending")
+  driver            Driver?   @relation(fields: [driverId], references: [id])
+  driverId          String?
+  vehicle           Vehicle?  @relation(fields: [vehicleId], references: [id])
+  vehicleId         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  estimatedArrival  DateTime?
+  fare              Float?
+  distance          Float?
+  duration          Int?      // in minutes
+}
+
+model MaintenanceLog {
+  id          String    @id @default(cuid())
+  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id])
+  vehicleId   String
+  type        String    // routine, repair, emergency
+  description String
+  cost        Float
+  date        DateTime
+  nextDueDate DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Document {
+  id          String    @id @default(cuid())
+  driver      Driver    @relation(fields: [driverId], references: [id])
+  driverId    String
+  type        String    // license, insurance, certification
+  number      String
+  expiryDate  DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Report {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  type        String    // daily, weekly, monthly
+  data        String    // JSON string containing report data
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime  @default(now())
+}
